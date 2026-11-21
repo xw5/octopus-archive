@@ -19,3 +19,4 @@ backup/
 tests/files/
 tests/target/
 tests/tmp/
+!langres.res

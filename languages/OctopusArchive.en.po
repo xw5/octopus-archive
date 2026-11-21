@@ -86,7 +86,7 @@ msgstr "Task in progress"
 
 #: main.rstaskrunningmsg
 msgid "请先点击「取消」停止任务，再关闭窗口。"
-msgstr "Click \\\\\\\"Cancel\\\\\\\" to stop the task before closing the window."
+msgstr "Click \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"Cancel\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" to stop the task before closing the window."
 
 #: main.rssameassource
 msgid "与源目录相同"
@@ -122,7 +122,7 @@ msgstr "Confirm undo"
 
 #: main.rsundoconfirmfmt
 msgid "撤销最近一次执行「%s」？"
-msgstr "Undo the last run \\\\\\\"%s\\\\\\\"?"
+msgstr "Undo the last run \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"%s\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"?"
 
 #: main.rsinfotitle
 msgid "提示"
@@ -162,7 +162,7 @@ msgstr "Error: %s"
 
 #: main.rsexecdonefmt
 msgid "「%s」执行完成，本次操作可撤销。"
-msgstr "\\\\\\\"%s\\\\\\\" finished; this run can be undone."
+msgstr "\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"%s\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\" finished; this run can be undone."
 
 #: main.rsundodonefmt
 msgid "撤销完成，失败 %d 项。"
@@ -207,14 +207,6 @@ msgstr "Overwrite"
 #: main.rslangauto
 msgid "跟随系统"
 msgstr "Follow system"
-
-#: main.rslangchangetitle
-msgid "语言设置"
-msgstr "Language"
-
-#: main.rslangchangehint
-msgid "语言设置将在下次启动时生效。"
-msgstr "The new language takes effect after the next start."
 
 #: organizer.rsregexinvalidfmt
 msgid "规则 %d 的正则无效：%s（%s）"

@@ -8,7 +8,8 @@ interface
 
 uses
   Classes, SysUtils, Math, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  ExtCtrls, ComCtrls, Grids, FileCtrl, IniFiles, LCLTranslator,
+  ExtCtrls, ComCtrls, Grids, FileCtrl, IniFiles, LCLType, LCLTranslator,
+  Translations, LResources,
   {$IFDEF WINDOWS} Windows, {$ENDIF}
   Organizer;
 
@@ -140,6 +141,8 @@ type
     FRuns: TRunList;
     FPreviewMap: array of Integer;
     FLastNoop: Integer;
+    FLoadingLang: Boolean;    // 程序性设置 cmbLang.ItemIndex 时抑制 OnChange
+    FComboLangIdx: Integer;   // ini 保存的语言选项（0=auto 1=zh 2=en），切换后恢复显示用
     function ReadOptions(const ASrc: string): TOrganizerOptions;
     function ResolveOutDir: string;
     function GridToMaps: TFormatMaps;
@@ -150,6 +153,7 @@ type
     procedure UpdateButtons;
     procedure ShowPreview(Plan: TPlanList);
     procedure AppendLog(const S: string);
+    procedure RefreshAfterLanguageSwitch;
   public
     procedure WorkerFinished;
   end;
@@ -227,9 +231,6 @@ resourcestring
   rsConflictSkip   = '跳过';
   rsConflictOverwrite = '覆盖';
   rsLangAuto       = '跟随系统';
-  // 语言切换
-  rsLangChangeTitle = '语言设置';
-  rsLangChangeHint  = '语言设置将在下次启动时生效。';
 
 { 功能名（原 FeatureNames 常量数组），按功能序号返回已翻译文本 }
 function FeatureName(Feature: Integer): string;
@@ -242,16 +243,115 @@ begin
   end;
 end;
 
+{ ===== 内嵌英文翻译（zh 基准 ↔ en），支持运行时即时切换 =====
+  英文 po 编译进 exe 资源 EN_PO（langres.rc → langres.res，源文件
+  languages\OctopusArchive.en.po）。前向表 msgid=中文 → msgstr=英文；
+  反向表由前向表翻转生成（msgid=英文 → msgstr=中文），供"英→中"切换。
+  两条查找路径都可用：identifier 精确命中，或 msgid=当前文本回退
+  （TPOFile.Translate 的既有行为，见 translations.pas）。 }
+
+const
+  EN_PO_RES_NAME = 'EN_PO';
+
+var
+  GPoZhEn, GPoEnZh: TPOFile;             // 前/反向 po（所有权在对应 translator）
+  GTrZhEn, GTrEnZh: TPOTranslator;       // 挂到全局 LRSTranslator 的两个翻译器
+  GActiveLang: string = 'zh';            // 当前生效语言（'zh' | 'en'）
+  GAutoLang: string = 'zh';              // "跟随系统"解析出的语言，启动时算好
+
+function EscapePo(const S: string): string;
+begin
+  // 与 tools/gen_po.py 的 esc() 一致
+  Result := S.Replace('\', '\\').Replace('"', '\"');
+end;
+
+{ 由前向 po 生成反向 po 文本（msgid/msgstr 互换）并解析为 TPOFile }
+function BuildReversePo(Fwd: TPOFile): TPOFile;
+var
+  I: Integer;
+  It: TPOFileItem;
+  Txt: string;
+begin
+  Txt := 'msgid ""' + sLineBreak + 'msgstr ""' + sLineBreak
+    + '"Content-Type: text/plain; charset=UTF-8\\n"' + sLineBreak + sLineBreak;
+  for I := 0 to Fwd.Items.Count - 1 do begin
+    It := TPOFileItem(Fwd.Items[I]);
+    if (It.Original = '') or (It.Translation = '') then Continue;
+    Txt := Txt + '#: ' + It.IdentifierLow + sLineBreak
+      + 'msgid "' + EscapePo(It.Translation) + '"' + sLineBreak
+      + 'msgstr "' + EscapePo(It.Original) + '"' + sLineBreak + sLineBreak;
+  end;
+  Result := TPOFile.Create(True);
+  Result.ReadPOText(Txt);
+end;
+
+{ 懒加载：从 exe 内嵌资源解析英文 po 并派生反向表（进程内仅一次） }
+procedure EnsureTranslationTables;
+var
+  Res: TResourceStream;
+begin
+  if GPoZhEn <> nil then Exit;
+  Res := TResourceStream.Create(HInstance, EN_PO_RES_NAME, RT_RCDATA);
+  try
+    GPoZhEn := TPOFile.Create(Res, False);   // Full=False：首条 header 不计条目
+    GPoEnZh := BuildReversePo(GPoZhEn);
+    GTrZhEn := TPOTranslator.Create(GPoZhEn);   // translator 接管 po 生命周期
+    GTrEnZh := TPOTranslator.Create(GPoEnZh);
+  finally
+    Res.Free;
+  end;
+end;
+
+procedure FreeTranslationState;
+begin
+  LRSTranslator := nil;              // 防 finalization 二次释放
+  GTrZhEn.Free;  GTrZhEn := nil;     // translator.Destroy 连带释放其 po
+  GTrEnZh.Free;  GTrEnZh := nil;
+  GPoZhEn := nil;
+  GPoEnZh := nil;
+end;
+
+{ 切换生效语言。启动阶段（FormMain=nil）只换 resourcestring 表与 LFM
+  流式加载用的翻译器；窗体已存在时同步刷新界面（即时切换）。 }
+procedure SetLanguageActive(const Lang: string);
+begin
+  if Lang = GActiveLang then Exit;
+  EnsureTranslationTables;
+  try
+    if Lang = 'en' then begin
+      TranslateResourceStrings(GPoZhEn);
+      LRSTranslator := GTrZhEn;
+    end else begin
+      TranslateResourceStrings(GPoEnZh);
+      LRSTranslator := GTrEnZh;
+    end;
+    GActiveLang := Lang;
+  except
+    // 内嵌资源缺失/损坏（异常构建）时保持原语言
+  end;
+  if FormMain <> nil then
+    FormMain.RefreshAfterLanguageSwitch;
+end;
+
 { 语言逻辑：ini [Options] Language = auto|zh|en。
-  zh 是基准语言（源码内嵌中文），无需翻译文件；
-  en 加载 exe 同目录 languages\OctopusArchive.en.po；
-  auto 按 Windows UI 语言：中文族 → 基准，其他 → 英文。 }
+  zh 是基准语言（源码内嵌中文），无需处理；
+  en 走内嵌翻译（见上）；auto 按 Windows UI 语言：中文族 → 基准，其他 → 英文。
+  单 exe 自带翻译，无需外部文件；调用时机在主窗体创建前（.lpr），
+  这样窗体 LFM 文本流式加载时即获得翻译。 }
 procedure ApplySavedLanguage;
 var
   Ini: TIniFile;
   Lang: string;
-  LangDir: string;
 begin
+  // "跟随系统"只取决于系统语言本身，与 ini 里上次选了什么无关
+  {$IFDEF WINDOWS}
+  if (GetUserDefaultLangID and $3FF) = $04 then
+    GAutoLang := 'zh'   // 中文系统用基准语言
+  else
+    GAutoLang := 'en';
+  {$ELSE}
+  GAutoLang := 'zh';
+  {$ENDIF}
   Lang := 'auto';
   try
     Ini := TIniFile.Create(ExtractFilePath(ParamStr(0)) + ConfigFileName);
@@ -263,27 +363,10 @@ begin
   except
     // ini 读取失败按"跟随系统"处理
   end;
-  if Lang = 'auto' then begin
-    {$IFDEF WINDOWS}
-    if (GetUserDefaultLangID and $3FF) = $04 then
-      Lang := 'zh'   // 中文系统用基准语言
-    else
-      Lang := 'en';
-    {$ELSE}
-    Lang := 'zh';
-    {$ENDIF}
-  end;
-  if Lang = 'en' then
-    try
-      // 目录用绝对路径（CWD 不可靠）。便携布局：languages 与 exe 同目录；
-      // 开发布局：exe 在 bin\ 下，languages 在项目根（上级目录）
-      LangDir := ExtractFilePath(ParamStr(0)) + 'languages';
-      if not DirectoryExists(LangDir) then
-        LangDir := ExpandFileName(ExtractFilePath(ParamStr(0)) + '..' + DirectorySeparator + 'languages');
-      SetDefaultLang('en', LangDir);
-    except
-      // 翻译文件缺失/损坏时保持基准中文
-    end;
+  if Lang = 'auto' then
+    Lang := GAutoLang;
+  if Lang <> 'zh' then
+    SetLanguageActive(Lang);
 end;
 
 { TWorkerThread }
@@ -429,6 +512,7 @@ procedure TFormMain.FormCreate(Sender: TObject);
 var
   W: Integer;
 begin
+  FLoadingLang := True;  // 程序性设置下拉框期间抑制 cmbLang.OnChange
   // 顶部三行标签统一列宽，使源目录/输出目录/模式后的输入控件左对齐
   // （按当前语言取三个标签的最宽者，中英文都紧凑对齐）
   W := Max(lblSrc.Canvas.TextWidth(lblSrc.Caption),
@@ -506,6 +590,7 @@ begin
   pcMain.ActivePage := tsFormat;
   FRuns := TRunList.Create;
   LoadConfig;
+  FLoadingLang := False;
   UpdateButtons;
   AppendLog(rsWelcome);
 end;
@@ -789,9 +874,64 @@ end;
 
 procedure TFormMain.cmbLangChange(Sender: TObject);
 begin
-  // 语言在启动时应用（.lpr → ApplySavedLanguage），此处仅提示；
-  // 选择值由 SaveConfig 在退出时写入 ini
-  MessageDlg(rsLangChangeTitle, rsLangChangeHint, mtInformation, [mbOK], 0);
+  if FLoadingLang then Exit;  // 程序性设置（FormCreate/LoadConfig/刷新）不触发切换
+  // 记录用户选择（刷新时恢复显示用；退出时 SaveConfig 也按此写 ini）
+  FComboLangIdx := cmbLang.ItemIndex;
+  // 即时切换：resourcestring 表 + 已创建窗体的 LFM 属性 + 代码赋值文本一并刷新
+  case cmbLang.ItemIndex of
+    1: SetLanguageActive('zh');
+    2: SetLanguageActive('en');
+  else
+    SetLanguageActive(GAutoLang);  // 跟随系统 → 启动时解析的系统语言
+  end;
+end;
+
+{ 语言即时切换后的界面刷新。LRSTranslator.UpdateTranslation 覆盖 published
+  字符串属性（Caption/Text/TextHint）；以下代码赋值的文本不在其覆盖范围，
+  需在此重刷；预览网格从内存中的计划重渲染（不重新扫描）。 }
+procedure TFormMain.RefreshAfterLanguageSwitch;
+var
+  I: Integer;
+begin
+  // 标签页 caption 带 FormShow 加的两空格 padding，先去掉才能按 msgid 匹配
+  for I := 0 to pcMain.PageCount - 1 do
+    pcMain.Pages[I].Caption := Trim(pcMain.Pages[I].Caption);
+  if LRSTranslator is TUpdateTranslator then
+    TUpdateTranslator(LRSTranslator).UpdateTranslation(Self);
+  // 重新补标签页间距 padding（同 FormShow）
+  for I := 0 to pcMain.PageCount - 1 do
+    pcMain.Pages[I].Caption := '  ' + pcMain.Pages[I].Caption + '  ';
+  // 下拉框选项（rs* 已是新语言的查找结果；语言名本身不翻译）
+  I := cmbMode.ItemIndex;
+  cmbMode.Items.Clear;
+  cmbMode.Items.Add(rsModeMove);
+  cmbMode.Items.Add(rsModeCopy);
+  cmbMode.ItemIndex := I;
+  I := cmbConflict.ItemIndex;
+  cmbConflict.Items.Clear;
+  cmbConflict.Items.Add(rsConflictRename);
+  cmbConflict.Items.Add(rsConflictSkip);
+  cmbConflict.Items.Add(rsConflictOverwrite);
+  cmbConflict.ItemIndex := I;
+  I := cmbLang.ItemIndex;
+  cmbLang.Items.Clear;
+  cmbLang.Items.Add(rsLangAuto);
+  cmbLang.Items.Add('中文');
+  cmbLang.Items.Add('English');
+  cmbLang.ItemIndex := FComboLangIdx;
+  // 表格列头
+  gridMap.Cells[0, 0] := rsMapColExt;
+  gridMap.Cells[1, 0] := rsMapColFolder;
+  gridRules.Cells[0, 0] := rsRuleColRegex;
+  gridRules.Cells[1, 0] := rsRuleColFolder;
+  gridPreview.Cells[0, 0] := rsColSource;
+  gridPreview.Cells[1, 0] := rsColTarget;
+  gridPreview.Cells[2, 0] := rsColState;
+  gridPreview.Cells[3, 0] := rsColNote;
+  // 预览网格与状态栏摘要重渲染（无计划时保持"就绪"，其 Caption 由
+  // UpdateTranslation 翻译）
+  if FCurrentPlan <> nil then
+    ShowPreview(FCurrentPlan);
 end;
 
 procedure TFormMain.StartWorker(AKind: TWorkerKind);
@@ -1064,6 +1204,7 @@ begin
       cmbLang.ItemIndex := 1
     else
       cmbLang.ItemIndex := 0;
+    FComboLangIdx := cmbLang.ItemIndex;
     // 功能①映射表
     Cnt := Ini.ReadInteger('FormatMap', 'Count', 0);
     gridMap.RowCount := 1;
@@ -1130,4 +1271,9 @@ begin
   end;
 end;
 
+initialization
+finalization
+  // 释放内嵌翻译的 po/translator（translator 连带释放其 po）；
+  // 先清 LRSTranslator，避免 lcltranslator.finalization 二次释放
+  FreeTranslationState;
 end.

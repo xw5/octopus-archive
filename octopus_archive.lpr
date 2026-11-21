@@ -11,6 +11,7 @@ uses
   { you can add units after this };
 
 {$R *.res}
+{$R langres.res}  // 英文翻译 po 内嵌（源 langres.rc / languages\OctopusArchive.en.po）
 
 begin
   RequireDerivedFormResource := True;

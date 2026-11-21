@@ -4,11 +4,11 @@ Windows 桌面文件整理 GUI 工具，使用 Lazarus（Free Pascal）开发，
 
 ## 语言 / Language
 
-界面支持中文（基准语言）和 English，可通过主窗口右下角的「语言/Language」下拉框切换（跟随系统 / 中文 / English），**下次启动生效**，选择保存在 `octopus_archive.ini` 的 `[Options] Language`（`auto`/`zh`/`en`）。
+界面支持中文（基准语言）和 English，可通过主窗口右下角的「语言/Language」下拉框切换（跟随系统 / 中文 / English），**切换即时生效**，无需重启；选择保存在 `octopus_archive.ini` 的 `[Options] Language`（`auto`/`zh`/`en`），下次启动按此初始化。
 
 - `auto`：按 Windows 系统语言自动选择（中文系统 → 中文，其他 → English）
-- 翻译文件：`languages/OctopusArchive.en.po`（UTF-8），便携使用时需与 exe 放在同一目录；开发目录下 exe 在 `bin\`，工具会自动回退到项目根的 `languages\`
-- 新增语言：新增字符串后先用 `lazbuild` 构建（生成 `lib\**\*.rsj`），再运行 `python tools/gen_po.py` 重新生成 po 模板（自动保留已有翻译），补上新字符串的 msgstr，另存为 `OctopusArchive.<语言代码>.po`，并在 `main.pas` 的 `ApplySavedLanguage` 中增加对应分支
+- 翻译**内嵌在 exe 中**（英文 po 经 `langres.rc` 编译为 `langres.res` 链接进程序），单文件便携，无需外部翻译文件；源文件为 `languages/OctopusArchive.en.po`（UTF-8）
+- 新增语言：新增字符串后先用 `lazbuild` 构建（生成 `lib\**\*.rsj`），再运行 `python tools/gen_po.py` 重新生成 po（自动保留已有翻译并重编译 `langres.res`），补上新语言的翻译后在 `main.pas` 的 `SetLanguageActive` 增加对应分支（含反向表派生或直接内嵌该语言的 po）
 
 ## 功能
 
@@ -47,8 +47,8 @@ Windows 桌面文件整理 GUI 工具，使用 Lazarus（Free Pascal）开发，
 ## 构建与运行
 
 - 打开 IDE：用 Lazarus 打开 `octopus_archive.lpi`，直接 Run/Build
-- 命令行构建：`C:\lazarus\lazbuild.exe -B octopus_archive.lpi`
-- 产物：`bin\OctopusArchive.exe`（绿色免安装；English 界面需要 `languages\OctopusArchive.en.po`，发布时与 exe 放同一目录）
+- 命令行构建：`C:\lazarus\lazbuild.exe -B octopus_archive.lpi`（修改翻译后先 `python tools/gen_po.py` 再构建，翻译随 exe 重新内嵌）
+- 产物：`bin\OctopusArchive.exe`（绿色免安装，单文件，界面语言已内嵌）
 
 ## 测试
 

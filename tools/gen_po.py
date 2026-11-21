@@ -134,3 +134,14 @@ if missing:
         print("  ", m)
     sys.exit(1)
 print("all translated")
+
+# 英文 po 内嵌进 exe：windres 把 langres.rc（引用 po）编译成 langres.res，
+# .lpr 里 {$R langres.res} 链接。改了翻译必须重跑本脚本，否则 exe 里还是旧译文。
+import subprocess
+WINDRES = r"C:\lazarus\fpc\3.2.2\bin\x86_64-win64\windres.exe"
+r = subprocess.run([WINDRES, ROOT + "/langres.rc", "-O", "coff", "-o", ROOT + "/langres.res"],
+                   cwd=ROOT, capture_output=True, text=True)
+if r.returncode != 0:
+    print("windres failed:", (r.stderr or "").strip())
+    sys.exit(1)
+print("written:", ROOT + "/langres.res")
