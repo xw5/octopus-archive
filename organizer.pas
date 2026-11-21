@@ -136,6 +136,22 @@ type
 
 implementation
 
+{ 用户可见文本（预览备注/错误/日志），resourcestring 供 i18n 翻译 }
+resourcestring
+  rsRegexInvalidFmt   = '规则 %d 的正则无效：%s（%s）';
+  rsNoteTargetExists  = '目标已存在，跳过';
+  rsNoteDirConflict   = '目标存在同名目录，无法处理';
+  rsNoteOverwrite     = '将覆盖目标同名文件';
+  rsNoteRenamed       = '重名 → 已改名';
+  rsLogDelEmptyFmt    = '删除空目录: %s';
+  rsErrDirConflict    = '目标存在同名目录，拒绝处理';
+  rsErrMoveFailed     = '移动失败：无法删除源文件（已回滚）';
+  rsLogFailFmt        = '失败: %s → %s';
+  rsErrUndoCopyDel    = '无法删除复制产生的文件';
+  rsErrUndoTargetDel  = '无法删除目标文件';
+  rsLogUndoFailFmt    = '撤销失败: %s → %s';
+  rsLogDelEmptyUndoFmt = '删除空目录（撤销）: %s';
+
 { TRunRecord }
 
 constructor TRunRecord.Create(const ATitle: string);
@@ -246,7 +262,7 @@ begin
       RE.Compile;
     except
       on E: Exception do
-        Errs.Add(Format('规则 %d 的正则无效：%s（%s）', [I + 1, Rules[I].Pattern, E.Message]));
+        Errs.Add(Format(rsRegexInvalidFmt, [I + 1, Rules[I].Pattern, E.Message]));
     end;
     RE.Free;
   end;
@@ -331,17 +347,17 @@ begin
     cmSkip:
       begin
         Item.State := pisSkipped;
-        Item.Note := '目标已存在，跳过';
+        Item.Note := rsNoteTargetExists;
       end;
     cmOverwrite:
       begin
         if DirectoryExists(Item.Target) then begin
           Item.DirConflict := True;
-          Item.Note := '目标存在同名目录，无法处理';
+          Item.Note := rsNoteDirConflict;
         end else begin
           Item.WillOverwrite := FileExists(Item.Target);
           if Item.WillOverwrite then
-            Item.Note := '将覆盖目标同名文件';
+            Item.Note := rsNoteOverwrite;
         end;
       end;
     cmRename:
@@ -353,7 +369,7 @@ begin
           Item.Target := Format('%s_%d%s', [Base, N, Ext]);
           Inc(N);
         end;
-        Item.Note := '重名 → 已改名';
+        Item.Note := rsNoteRenamed;
       end;
   end;
 end;
@@ -436,7 +452,7 @@ begin
         if DirIsEmpty(Sub) then
           if RemoveDir(Sub) then begin
             if Log <> nil then
-              Log.Add('删除空目录: ' + Sub);
+              Log.Add(Format(rsLogDelEmptyFmt, [Sub]));
           end;
       end;
       R := FindNext(SR);
@@ -640,7 +656,7 @@ begin
     end;
     try
       if Item.DirConflict then
-        raise Exception.Create('目标存在同名目录，拒绝处理');
+        raise Exception.Create(rsErrDirConflict);
       if (Run <> nil) and (not DirectoryExists(ExtractFileDir(Item.Target))) then
         RecordNewDirs(ExtractFileDir(Item.Target), Run);
       ForceDirectories(ExtractFileDir(Item.Target));
@@ -661,7 +677,7 @@ begin
           CopyFileContents(Item.Source, Item.Target);
           if not DeleteFile(Item.Source) then begin
             DeleteFile(Item.Target);
-            raise Exception.Create('移动失败：无法删除源文件（已回滚）');
+            raise Exception.Create(rsErrMoveFailed);
           end;
         end;
         U := TUndoEntry.Create;
@@ -676,7 +692,7 @@ begin
         Item.State := pisFailed;
         Item.ErrMsg := E.Message;
         if Log <> nil then
-          Log.Add('失败: ' + Item.Source + ' → ' + E.Message);
+          Log.Add(Format(rsLogFailFmt, [Item.Source, E.Message]));
       end;
     end;
     if Assigned(OnProgress) then
@@ -713,7 +729,7 @@ begin
       if U.WasCopy then begin
         if FileExists(U.Target) then
           if not DeleteFile(U.Target) then
-            raise Exception.Create('无法删除复制产生的文件');
+            raise Exception.Create(rsErrUndoCopyDel);
       end else begin
         if not DirectoryExists(ExtractFileDir(U.Source)) then
           ForceDirectories(ExtractFileDir(U.Source));
@@ -721,7 +737,7 @@ begin
           if not RenameFile(U.Target, U.Source) then begin
             CopyFileContents(U.Target, U.Source);
             if not DeleteFile(U.Target) then
-              raise Exception.Create('无法删除目标文件');
+              raise Exception.Create(rsErrUndoTargetDel);
           end;
         end;
       end;
@@ -729,7 +745,7 @@ begin
       on E: Exception do begin
         Inc(Failed);
         if Log <> nil then
-          Log.Add('撤销失败: ' + U.Target + ' → ' + E.Message);
+          Log.Add(Format(rsLogUndoFailFmt, [U.Target, E.Message]));
       end;
     end;
     Inc(Done);
@@ -744,7 +760,7 @@ begin
       if DirectoryExists(D) and DirIsEmpty(D) then
         if RemoveDir(D) then begin
           if Log <> nil then
-            Log.Add('删除空目录（撤销）: ' + D);
+            Log.Add(Format(rsLogDelEmptyUndoFmt, [D]));
         end;
     end;
   end;

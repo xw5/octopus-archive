@@ -8,7 +8,8 @@ interface
 
 uses
   Classes, SysUtils, Math, Forms, Controls, Graphics, Dialogs, StdCtrls,
-  ExtCtrls, ComCtrls, Grids, FileCtrl, IniFiles,
+  ExtCtrls, ComCtrls, Grids, FileCtrl, IniFiles, LCLTranslator,
+  {$IFDEF WINDOWS} Windows, {$ENDIF}
   Organizer;
 
 type
@@ -80,6 +81,7 @@ type
     chkIgnoreCase: TCheckBox;
     chkRecursive: TCheckBox;
     cmbConflict: TComboBox;
+    cmbLang: TComboBox;
     cmbMode: TComboBox;
     dlgDir: TSelectDirectoryDialog;
     edtOut: TEdit;
@@ -90,6 +92,7 @@ type
     lblConflict: TLabel;
     lblFormatHelp: TLabel;
     lblFlattenHelp: TLabel;
+    lblLang: TLabel;
     lblMode: TLabel;
     lblOut: TLabel;
     lblRegexHelp: TLabel;
@@ -123,6 +126,7 @@ type
     procedure btnRuleDownClick(Sender: TObject);
     procedure btnRuleUpClick(Sender: TObject);
     procedure btnUndoClick(Sender: TObject);
+    procedure cmbLangChange(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -153,12 +157,134 @@ type
 var
   FormMain: TFormMain;
 
-const
-  FeatureNames: array[1..3] of string = ('按格式分组', '打平目录', '按正则分类');
+{ 读取 ini 中的语言设置并应用翻译。必须在主窗体创建之前调用（.lpr 中），
+  这样窗体 LFM 文本流式加载时即可获得翻译；代码中的 resourcestring
+  之后被引用时也已是译文的查找结果。 }
+procedure ApplySavedLanguage;
 
 implementation
 
 {$R *.lfm}
+
+{ 用户可见文本，resourcestring 供 i18n 翻译（英文见 languages/OctopusArchive.en.po） }
+resourcestring
+  // 状态栏与进度
+  rsProcessingFmt  = '处理中 %d / %d：%s';
+  rsScanningFmt    = '扫描中：%s';
+  rsCancelledSfx   = '（已取消）';
+  // 预览状态列
+  rsStateBlocked   = '无法处理';
+  rsStatePending   = '待执行';
+  rsStateSkipped   = '跳过';
+  rsStateDone      = '完成';
+  rsStateFailed    = '失败';
+  rsNoFilesFmt     = '没有需要处理的文件（已在目标位置 %d 项）';
+  rsSummaryFmt     = '共 %d 项：待执行 %d · 将覆盖 %d · 完成 %d · 跳过 %d · 失败 %d · 已在目标位置 %d';
+  // 表格列头
+  rsMapColExt      = '扩展名列表（逗号分隔，如 jpg,jpeg）';
+  rsMapColFolder   = '目标目录名（留空 = 默认第一个扩展名）';
+  rsRuleColRegex   = '正则表达式（按顺序匹配，第一个命中生效）';
+  rsRuleColFolder  = '目标目录名（留空 = 移到输出目录顶层）';
+  rsColSource      = '源文件';
+  rsColTarget      = '目标';
+  rsColState       = '状态';
+  rsColNote        = '备注';
+  // 对话框
+  rsTaskRunningTitle = '任务进行中';
+  rsTaskRunningMsg   = '请先点击「取消」停止任务，再关闭窗口。';
+  rsSameAsSource     = '与源目录相同';
+  rsExecConfirmTitle = '执行确认';
+  // 执行确认正文按行拆分（po 里 \n 展开为换行符，多行 msgid 难以精确匹配）
+  rsExecConfirmHead  = '确定执行「%s」？';
+  rsExecConfirmMode  = '模式：%s · 冲突处理：%s';
+  rsExecConfirmSrc   = '源目录：%s';
+  rsExecConfirmOut   = '输出目录：%s';
+  rsOverwriteWarn    = '警告：同名文件将被覆盖，原内容无法恢复！';
+  rsUndoConfirmTitle = '撤销确认';
+  rsUndoConfirmFmt   = '撤销最近一次执行「%s」？';
+  rsInfoTitle        = '提示';
+  rsSelectSource     = '请先选择一个存在的源目录。';
+  rsOutIsFile        = '输出目录指向的是一个已存在的文件，请重新选择。';
+  rsAddRuleFirst     = '请先在规则列表中添加至少一条正则规则。';
+  rsRegexErrTitle    = '正则规则有误';
+  rsErrorTitle       = '操作出错';
+  rsRunTitleFmt      = '%s（%s）';
+  // 日志
+  rsWelcome      = '欢迎使用 OctopusArchive 文件整理工具';
+  rsLogErrorFmt  = '出错: %s';
+  rsExecDoneFmt  = '「%s」执行完成，本次操作可撤销。';
+  rsUndoDoneFmt  = '撤销完成，失败 %d 项。';
+  rsUndoDone     = '撤销完成';
+  rsUndoFailed   = '撤销失败';
+  // 功能名
+  rsFeature1     = '按格式分组';
+  rsFeature2     = '打平目录';
+  rsFeature3     = '按正则分类';
+  // 下拉框选项（Items 在 FormCreate 里代码赋值，保证随语言切换）
+  rsModeMove       = '移动';
+  rsModeCopy       = '复制';
+  rsConflictRename = '重命名加序号';
+  rsConflictSkip   = '跳过';
+  rsConflictOverwrite = '覆盖';
+  rsLangAuto       = '跟随系统';
+  // 语言切换
+  rsLangChangeTitle = '语言设置';
+  rsLangChangeHint  = '语言设置将在下次启动时生效。';
+
+{ 功能名（原 FeatureNames 常量数组），按功能序号返回已翻译文本 }
+function FeatureName(Feature: Integer): string;
+begin
+  case Feature of
+    1: Result := rsFeature1;
+    2: Result := rsFeature2;
+  else
+    Result := rsFeature3;
+  end;
+end;
+
+{ 语言逻辑：ini [Options] Language = auto|zh|en。
+  zh 是基准语言（源码内嵌中文），无需翻译文件；
+  en 加载 exe 同目录 languages\OctopusArchive.en.po；
+  auto 按 Windows UI 语言：中文族 → 基准，其他 → 英文。 }
+procedure ApplySavedLanguage;
+var
+  Ini: TIniFile;
+  Lang: string;
+  LangDir: string;
+begin
+  Lang := 'auto';
+  try
+    Ini := TIniFile.Create(ExtractFilePath(ParamStr(0)) + ConfigFileName);
+    try
+      Lang := Ini.ReadString('Options', 'Language', 'auto');
+    finally
+      Ini.Free;
+    end;
+  except
+    // ini 读取失败按"跟随系统"处理
+  end;
+  if Lang = 'auto' then begin
+    {$IFDEF WINDOWS}
+    if (GetUserDefaultLangID and $3FF) = $04 then
+      Lang := 'zh'   // 中文系统用基准语言
+    else
+      Lang := 'en';
+    {$ELSE}
+    Lang := 'zh';
+    {$ENDIF}
+  end;
+  if Lang = 'en' then
+    try
+      // 目录用绝对路径（CWD 不可靠）。便携布局：languages 与 exe 同目录；
+      // 开发布局：exe 在 bin\ 下，languages 在项目根（上级目录）
+      LangDir := ExtractFilePath(ParamStr(0)) + 'languages';
+      if not DirectoryExists(LangDir) then
+        LangDir := ExpandFileName(ExtractFilePath(ParamStr(0)) + '..' + DirectorySeparator + 'languages');
+      SetDefaultLang('en', LangDir);
+    except
+      // 翻译文件缺失/损坏时保持基准中文
+    end;
+end;
 
 { TWorkerThread }
 
@@ -240,11 +366,11 @@ begin
   if FProgTotal > 0 then begin
     FormMain.pbProgress.Max := FProgTotal;
     FormMain.pbProgress.Position := FProgCur;
-    FormMain.lblStatus.Caption := Format('处理中 %d / %d：%s', [FProgCur, FProgTotal, FProgInfo]);
+    FormMain.lblStatus.Caption := Format(rsProcessingFmt, [FProgCur, FProgTotal, FProgInfo]);
   end else begin
     FormMain.pbProgress.Max := 100;
     FormMain.pbProgress.Position := (FormMain.pbProgress.Position + 1) mod FormMain.pbProgress.Max;
-    FormMain.lblStatus.Caption := '扫描中：' + FProgInfo;
+    FormMain.lblStatus.Caption := Format(rsScanningFmt, [FProgInfo]);
   end;
 end;
 
@@ -300,7 +426,20 @@ end;
 { TFormMain }
 
 procedure TFormMain.FormCreate(Sender: TObject);
+var
+  W: Integer;
 begin
+  // 顶部三行标签统一列宽，使源目录/输出目录/模式后的输入控件左对齐
+  // （按当前语言取三个标签的最宽者，中英文都紧凑对齐）
+  W := Max(lblSrc.Canvas.TextWidth(lblSrc.Caption),
+        Max(lblOut.Canvas.TextWidth(lblOut.Caption),
+            lblMode.Canvas.TextWidth(lblMode.Caption))) + 8;
+  lblSrc.AutoSize := False;
+  lblOut.AutoSize := False;
+  lblMode.AutoSize := False;
+  lblSrc.Width := W;
+  lblOut.Width := W;
+  lblMode.Width := W;
   // 功能①映射表
   gridMap.ColCount := 2;
   gridMap.RowCount := 1;
@@ -308,8 +447,8 @@ begin
   gridMap.FixedCols := 0;
   gridMap.ColWidths[0] := 420;
   gridMap.ColWidths[1] := 340;
-  gridMap.Cells[0, 0] := '扩展名列表（逗号分隔，如 jpg,jpeg）';
-  gridMap.Cells[1, 0] := '目标目录名（留空 = 默认第一个扩展名）';
+  gridMap.Cells[0, 0] := rsMapColExt;
+  gridMap.Cells[1, 0] := rsMapColFolder;
   // 功能③规则表
   gridRules.ColCount := 2;
   gridRules.RowCount := 1;
@@ -317,8 +456,8 @@ begin
   gridRules.FixedCols := 0;
   gridRules.ColWidths[0] := 420;
   gridRules.ColWidths[1] := 320;
-  gridRules.Cells[0, 0] := '正则表达式（按顺序匹配，第一个命中生效）';
-  gridRules.Cells[1, 0] := '目标目录名（留空 = 移到输出目录顶层）';
+  gridRules.Cells[0, 0] := rsRuleColRegex;
+  gridRules.Cells[1, 0] := rsRuleColFolder;
   // 预览表
   gridPreview.ColCount := 4;
   gridPreview.RowCount := 1;
@@ -328,10 +467,10 @@ begin
   gridPreview.ColWidths[1] := 380;
   gridPreview.ColWidths[2] := 80;
   gridPreview.ColWidths[3] := 130;
-  gridPreview.Cells[0, 0] := '源文件';
-  gridPreview.Cells[1, 0] := '目标';
-  gridPreview.Cells[2, 0] := '状态';
-  gridPreview.Cells[3, 0] := '备注';
+  gridPreview.Cells[0, 0] := rsColSource;
+  gridPreview.Cells[1, 0] := rsColTarget;
+  gridPreview.Cells[2, 0] := rsColState;
+  gridPreview.Cells[3, 0] := rsColNote;
   // 表格观感：更高行距、隔行底色、主题化表头
   gridMap.DefaultRowHeight := 26;
   gridMap.RowHeights[0] := 28;
@@ -349,13 +488,26 @@ begin
   lblFormatHelp.Font.Color := clGrayText;
   lblFlattenHelp.Font.Color := clGrayText;
   lblRegexHelp.Font.Color := clGrayText;
+  // 下拉框选项用代码赋值（LFM 集合项的运行时翻译不可靠），保证随语言切换
+  cmbMode.Items.Clear;
+  cmbMode.Items.Add(rsModeMove);
+  cmbMode.Items.Add(rsModeCopy);
+  cmbConflict.Items.Clear;
+  cmbConflict.Items.Add(rsConflictRename);
+  cmbConflict.Items.Add(rsConflictSkip);
+  cmbConflict.Items.Add(rsConflictOverwrite);
+  cmbLang.Items.Clear;
+  cmbLang.Items.Add(rsLangAuto);
+  cmbLang.Items.Add('中文');      // 语言名称不翻译
+  cmbLang.Items.Add('English');
   cmbMode.ItemIndex := 0;
   cmbConflict.ItemIndex := 0;
+  cmbLang.ItemIndex := 0;
   pcMain.ActivePage := tsFormat;
   FRuns := TRunList.Create;
   LoadConfig;
   UpdateButtons;
-  AppendLog('欢迎使用 OctopusArchive 文件整理工具');
+  AppendLog(rsWelcome);
 end;
 
 procedure TFormMain.FormDestroy(Sender: TObject);
@@ -374,7 +526,7 @@ end;
 procedure TFormMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   if FWorker <> nil then begin
-    MessageDlg('任务进行中', '请先点击「取消」停止任务，再关闭窗口。',
+    MessageDlg(rsTaskRunningTitle, rsTaskRunningMsg,
       mtInformation, [mbOK], 0);
     FWorker.RequestCancel;
     CanClose := False;
@@ -465,6 +617,11 @@ begin
     pcMain.Pages[I].ParentFont := False;
     pcMain.Pages[I].Font.Height := BaseH;
   end;
+  // TCM_SETPADDING 在 Win10/11 视觉样式下宽高均无效，改用首尾空格拉开相邻标签
+  // （在 LFM 翻译之后修改，不影响 po 匹配；防重入避免 OnShow 再次触发时叠加）
+  for I := 0 to pcMain.PageCount - 1 do
+    if Copy(pcMain.Pages[I].Caption, 1, 2) <> '  ' then
+      pcMain.Pages[I].Caption := '  ' + pcMain.Pages[I].Caption + '  ';
   // 表格列宽铺满
   DistributeGridCols(gridMap);
   DistributeGridCols(gridRules);
@@ -601,16 +758,16 @@ begin
   Feature := pcMain.ActivePageIndex + 1;
   OutD := ResolveOutDir;
   if OutD = '' then
-    OutD := '与源目录相同'
+    OutD := rsSameAsSource
   else
     OutD := ExcludeTrailingPathDelimiter(OutD);
-  Msg := Format('确定执行「%s」？' + LineEnding + '模式：%s · 冲突处理：%s' + LineEnding +
-    '源目录：%s' + LineEnding + '输出目录：%s',
-    [FeatureNames[Feature], cmbMode.Text, cmbConflict.Text,
-     ExcludeTrailingPathDelimiter(Trim(edtSrc.Text)), OutD]);
+  Msg := Format(rsExecConfirmHead, [FeatureName(Feature)]) + LineEnding
+    + Format(rsExecConfirmMode, [cmbMode.Text, cmbConflict.Text]) + LineEnding
+    + Format(rsExecConfirmSrc, [ExcludeTrailingPathDelimiter(Trim(edtSrc.Text))]) + LineEnding
+    + Format(rsExecConfirmOut, [OutD]);
   if cmbConflict.ItemIndex = Ord(cmOverwrite) then
-    Msg := Msg + LineEnding + LineEnding + '警告：同名文件将被覆盖，原内容无法恢复！';
-  if MessageDlg('执行确认', Msg, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
+    Msg := Msg + LineEnding + LineEnding + rsOverwriteWarn;
+  if MessageDlg(rsExecConfirmTitle, Msg, mtConfirmation, [mbYes, mbNo], 0) <> mrYes then
     Exit;
   StartWorker(wkExecute);
 end;
@@ -619,7 +776,7 @@ procedure TFormMain.btnUndoClick(Sender: TObject);
 begin
   if (FWorker <> nil) or (FRuns.Count = 0) then
     Exit;
-  if MessageDlg('撤销确认', Format('撤销最近一次执行「%s」？',
+  if MessageDlg(rsUndoConfirmTitle, Format(rsUndoConfirmFmt,
       [FRuns[FRuns.Count - 1].Title]), mtConfirmation, [mbYes, mbNo], 0) = mrYes then
     StartWorker(wkUndo);
 end;
@@ -628,6 +785,13 @@ procedure TFormMain.btnCancelRunClick(Sender: TObject);
 begin
   if FWorker <> nil then
     FWorker.RequestCancel;
+end;
+
+procedure TFormMain.cmbLangChange(Sender: TObject);
+begin
+  // 语言在启动时应用（.lpr → ApplySavedLanguage），此处仅提示；
+  // 选择值由 SaveConfig 在退出时写入 ini
+  MessageDlg(rsLangChangeTitle, rsLangChangeHint, mtInformation, [mbOK], 0);
 end;
 
 procedure TFormMain.StartWorker(AKind: TWorkerKind);
@@ -646,13 +810,12 @@ begin
     Exit;
   Src := Trim(edtSrc.Text);
   if (Src = '') or (not DirectoryExists(Src)) then begin
-    MessageDlg('提示', '请先选择一个存在的源目录。', mtInformation, [mbOK], 0);
+    MessageDlg(rsInfoTitle, rsSelectSource, mtInformation, [mbOK], 0);
     Exit;
   end;
   OutD := ResolveOutDir;
   if (OutD <> '') and FileExists(ExcludeTrailingPathDelimiter(OutD)) then begin
-    MessageDlg('提示', '输出目录指向的是一个已存在的文件，请重新选择。',
-      mtInformation, [mbOK], 0);
+    MessageDlg(rsInfoTitle, rsOutIsFile, mtInformation, [mbOK], 0);
     Exit;
   end;
   Feature := pcMain.ActivePageIndex + 1;
@@ -668,7 +831,7 @@ begin
         begin
           Rules := GridToRules;
           if Rules.Count = 0 then begin
-            MessageDlg('提示', '请先在规则列表中添加至少一条正则规则。',
+            MessageDlg(rsInfoTitle, rsAddRuleFirst,
               mtInformation, [mbOK], 0);
             FreeAndNil(Rules);
             Exit;
@@ -677,7 +840,7 @@ begin
           try
             ValidateRegexRules(Rules, Opt.IgnoreCase, Errs);
             if Errs.Count > 0 then begin
-              MessageDlg('正则规则有误', Errs.Text, mtError, [mbOK], 0);
+              MessageDlg(rsRegexErrTitle, Errs.Text, mtError, [mbOK], 0);
               FreeAndNil(Rules);
               Exit;
             end;
@@ -687,7 +850,7 @@ begin
         end;
     end;
     if AKind = wkExecute then begin
-      Run := TRunRecord.Create(Format('%s（%s）', [FeatureNames[Feature],
+      Run := TRunRecord.Create(Format(rsRunTitleFmt, [FeatureName(Feature),
         FormatDateTime('hh:nn:ss', Now)]));
       OwnRun := True;
     end else if AKind = wkUndo then begin
@@ -745,10 +908,10 @@ begin
       gridPreview.Cells[0, I + 1] := Item.Source;
       gridPreview.Cells[1, I + 1] := Item.Target;
       case Item.State of
-        pisPending: if Item.DirConflict then S := '无法处理' else S := '待执行';
-        pisSkipped: S := '跳过';
-        pisDone: S := '完成';
-        else S := '失败';
+        pisPending: if Item.DirConflict then S := rsStateBlocked else S := rsStatePending;
+        pisSkipped: S := rsStateSkipped;
+        pisDone: S := rsStateDone;
+        else S := rsStateFailed;
       end;
       gridPreview.Cells[2, I + 1] := S;
       if Item.State = pisFailed then
@@ -776,10 +939,9 @@ begin
       end;
   end;
   if Total = 0 then
-    lblStatus.Caption := Format('没有需要处理的文件（已在目标位置 %d 项）', [FLastNoop])
+    lblStatus.Caption := Format(rsNoFilesFmt, [FLastNoop])
   else
-    lblStatus.Caption := Format(
-      '共 %d 项：待执行 %d · 将覆盖 %d · 完成 %d · 跳过 %d · 失败 %d · 已在目标位置 %d',
+    lblStatus.Caption := Format(rsSummaryFmt,
       [Total, Pend, Over, Done, Skip, Fail, FLastNoop]);
 end;
 
@@ -808,7 +970,7 @@ begin
   try
     FLastNoop := W.NoOpCount;
     if W.Error <> '' then
-      AppendLog('出错: ' + W.Error);
+      AppendLog(Format(rsLogErrorFmt, [W.Error]));
     case W.Kind of
       wkPreview:
         begin
@@ -824,7 +986,7 @@ begin
           Run := W.TakeRun;
           if (Run <> nil) and (Run.Items.Count > 0) then begin
             FRuns.Add(Run);
-            AppendLog(Format('「%s」执行完成，本次操作可撤销。', [Run.Title]));
+            AppendLog(Format(rsExecDoneFmt, [Run.Title]));
           end else if Run <> nil then
             Run.Free;
           for I := 0 to W.UndoLog.Count - 1 do
@@ -835,22 +997,22 @@ begin
           for I := 0 to W.UndoLog.Count - 1 do
             AppendLog(W.UndoLog[I]);
           if W.Error = '' then begin
-            AppendLog(Format('撤销完成，失败 %d 项。', [W.UndoFails]));
+            AppendLog(Format(rsUndoDoneFmt, [W.UndoFails]));
             if FRuns.Count > 0 then
               FRuns.Delete(FRuns.Count - 1);
             FreeAndNil(FCurrentPlan);
             ShowPreview(nil);
-            lblStatus.Caption := '撤销完成';
+            lblStatus.Caption := rsUndoDone;
           end else begin
             // 撤销出错时不弹出记录，保留可重试
-            lblStatus.Caption := '撤销失败';
+            lblStatus.Caption := rsUndoFailed;
           end;
         end;
     end;
     if W.Error <> '' then
-      MessageDlg('操作出错', W.Error, mtError, [mbOK], 0);
+      MessageDlg(rsErrorTitle, W.Error, mtError, [mbOK], 0);
     if W.WasCancelled and (W.Kind <> wkUndo) then
-      lblStatus.Caption := lblStatus.Caption + '（已取消）';
+      lblStatus.Caption := lblStatus.Caption + rsCancelledSfx;
   finally
     // W 此刻仍阻塞在 Execute 尾声的 Synchronize 里；直接 Free 会触发
     // SysDestroy→WaitFor，与 Synchronize 互相等待导致死锁。
@@ -894,6 +1056,14 @@ begin
     chkDelEmpty.Checked := Ini.ReadBool('Flatten', 'DeleteEmptyDirs', False);
     chkFullname.Checked := Ini.ReadBool('Regex', 'FullnameMatch', True);
     chkIgnoreCase.Checked := Ini.ReadBool('Regex', 'IgnoreCase', True);
+    // 语言（auto/zh/en；与 ApplySavedLanguage 的取值一致）
+    S := Ini.ReadString('Options', 'Language', 'auto');
+    if S = 'en' then
+      cmbLang.ItemIndex := 2
+    else if S = 'zh' then
+      cmbLang.ItemIndex := 1
+    else
+      cmbLang.ItemIndex := 0;
     // 功能①映射表
     Cnt := Ini.ReadInteger('FormatMap', 'Count', 0);
     gridMap.RowCount := 1;
@@ -941,6 +1111,12 @@ begin
     Ini.WriteBool('Flatten', 'DeleteEmptyDirs', chkDelEmpty.Checked);
     Ini.WriteBool('Regex', 'FullnameMatch', chkFullname.Checked);
     Ini.WriteBool('Regex', 'IgnoreCase', chkIgnoreCase.Checked);
+    case cmbLang.ItemIndex of
+      2: Ini.WriteString('Options', 'Language', 'en');
+      1: Ini.WriteString('Options', 'Language', 'zh');
+    else
+      Ini.WriteString('Options', 'Language', 'auto');
+    end;
     Ini.WriteInteger('FormatMap', 'Count', gridMap.RowCount - 1);
     for I := 1 to gridMap.RowCount - 1 do
       Ini.WriteString('FormatMap', 'Row' + IntToStr(I),

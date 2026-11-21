@@ -9,9 +9,11 @@ lib/
 *.a
 *.compiled
 *.lrj
+*.rsj
 *.exe
 *.ini
 backup/
+.zcode/
 
 # Test run artifacts
 tests/files/

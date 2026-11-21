@@ -1,0 +1,366 @@
+# English translation for OctopusArchive.
+# Base language is Chinese (embedded in the source code and forms).
+# Generated from lib/*/x86_64-win64/*.rsj (resourcestrings) + main.lfm inventory.
+# NOTE: every entry needs a "#: identifier" comment -- entries without one
+# are discarded by FPC's po parser (TPOFile.ReadPOText).
+msgid ""
+msgstr ""
+"Project-Id-Version: OctopusArchive\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: main.rsprocessingfmt
+msgid "处理中 %d / %d：%s"
+msgstr "Processing %d / %d: %s"
+
+#: main.rsscanningfmt
+msgid "扫描中：%s"
+msgstr "Scanning: %s"
+
+#: main.rscancelledsfx
+msgid "（已取消）"
+msgstr " (cancelled)"
+
+#: main.rsstateblocked
+msgid "无法处理"
+msgstr "Blocked"
+
+#: main.rsstatepending
+msgid "待执行"
+msgstr "Pending"
+
+#: main.rsstateskipped
+msgid "跳过"
+msgstr "Skip"
+
+#: main.rsstatedone
+msgid "完成"
+msgstr "Done"
+
+#: main.rsstatefailed
+msgid "失败"
+msgstr "Failed"
+
+#: main.rsnofilesfmt
+msgid "没有需要处理的文件（已在目标位置 %d 项）"
+msgstr "Nothing to process (%d file(s) already in place)"
+
+#: main.rssummaryfmt
+msgid "共 %d 项：待执行 %d · 将覆盖 %d · 完成 %d · 跳过 %d · 失败 %d · 已在目标位置 %d"
+msgstr "Total %d: pending %d · will overwrite %d · done %d · skipped %d · failed %d · already in place %d"
+
+#: main.rsmapcolext
+msgid "扩展名列表（逗号分隔，如 jpg,jpeg）"
+msgstr "Extension list (comma separated, e.g. jpg,jpeg)"
+
+#: main.rsmapcolfolder
+msgid "目标目录名（留空 = 默认第一个扩展名）"
+msgstr "Target folder (empty = use first extension)"
+
+#: main.rsrulecolregex
+msgid "正则表达式（按顺序匹配，第一个命中生效）"
+msgstr "Regex pattern (matched in order; first match wins)"
+
+#: main.rsrulecolfolder
+msgid "目标目录名（留空 = 移到输出目录顶层）"
+msgstr "Target folder (empty = move to output root)"
+
+#: main.rscolsource
+msgid "源文件"
+msgstr "Source file"
+
+#: main.rscoltarget
+msgid "目标"
+msgstr "Target"
+
+#: main.rscolstate
+msgid "状态"
+msgstr "State"
+
+#: main.rscolnote
+msgid "备注"
+msgstr "Note"
+
+#: main.rstaskrunningtitle
+msgid "任务进行中"
+msgstr "Task in progress"
+
+#: main.rstaskrunningmsg
+msgid "请先点击「取消」停止任务，再关闭窗口。"
+msgstr "Click \\\\\\\"Cancel\\\\\\\" to stop the task before closing the window."
+
+#: main.rssameassource
+msgid "与源目录相同"
+msgstr "Same as source folder"
+
+#: main.rsexecconfirmtitle
+msgid "执行确认"
+msgstr "Confirm execution"
+
+#: main.rsexecconfirmhead
+msgid "确定执行「%s」？"
+msgstr "Execute \"%s\"?"
+
+#: main.rsexecconfirmmode
+msgid "模式：%s · 冲突处理：%s"
+msgstr "Mode: %s · Conflict handling: %s"
+
+#: main.rsexecconfirmsrc
+msgid "源目录：%s"
+msgstr "Source folder: %s"
+
+#: main.rsexecconfirmout
+msgid "输出目录：%s"
+msgstr "Output folder: %s"
+
+#: main.rsoverwritewarn
+msgid "警告：同名文件将被覆盖，原内容无法恢复！"
+msgstr "Warning: files with the same name will be overwritten; the original content cannot be recovered!"
+
+#: main.rsundoconfirmtitle
+msgid "撤销确认"
+msgstr "Confirm undo"
+
+#: main.rsundoconfirmfmt
+msgid "撤销最近一次执行「%s」？"
+msgstr "Undo the last run \\\\\\\"%s\\\\\\\"?"
+
+#: main.rsinfotitle
+msgid "提示"
+msgstr "Notice"
+
+#: main.rsselectsource
+msgid "请先选择一个存在的源目录。"
+msgstr "Please select an existing source folder first."
+
+#: main.rsoutisfile
+msgid "输出目录指向的是一个已存在的文件，请重新选择。"
+msgstr "The output folder points to an existing file; please choose another."
+
+#: main.rsaddrulefirst
+msgid "请先在规则列表中添加至少一条正则规则。"
+msgstr "Please add at least one regex rule to the rule list first."
+
+#: main.rsregexerrtitle
+msgid "正则规则有误"
+msgstr "Invalid regex rules"
+
+#: main.rserrortitle
+msgid "操作出错"
+msgstr "Operation failed"
+
+#: main.rsruntitlefmt
+msgid "%s（%s）"
+msgstr "%s (%s)"
+
+#: main.rswelcome
+msgid "欢迎使用 OctopusArchive 文件整理工具"
+msgstr "Welcome to OctopusArchive file organizer"
+
+#: main.rslogerrorfmt
+msgid "出错: %s"
+msgstr "Error: %s"
+
+#: main.rsexecdonefmt
+msgid "「%s」执行完成，本次操作可撤销。"
+msgstr "\\\\\\\"%s\\\\\\\" finished; this run can be undone."
+
+#: main.rsundodonefmt
+msgid "撤销完成，失败 %d 项。"
+msgstr "Undo finished; %d item(s) failed."
+
+#: main.rsundodone
+msgid "撤销完成"
+msgstr "Undo finished"
+
+#: main.rsundofailed
+msgid "撤销失败"
+msgstr "Undo failed"
+
+#: main.rsfeature1
+msgid "按格式分组"
+msgstr "Group by extension"
+
+#: main.rsfeature2
+msgid "打平目录"
+msgstr "Flatten folders"
+
+#: main.rsfeature3
+msgid "按正则分类"
+msgstr "Sort by regex"
+
+#: main.rsmodemove
+msgid "移动"
+msgstr "Move"
+
+#: main.rsmodecopy
+msgid "复制"
+msgstr "Copy"
+
+#: main.rsconflictrename
+msgid "重命名加序号"
+msgstr "Rename with number"
+
+#: main.rsconflictoverwrite
+msgid "覆盖"
+msgstr "Overwrite"
+
+#: main.rslangauto
+msgid "跟随系统"
+msgstr "Follow system"
+
+#: main.rslangchangetitle
+msgid "语言设置"
+msgstr "Language"
+
+#: main.rslangchangehint
+msgid "语言设置将在下次启动时生效。"
+msgstr "The new language takes effect after the next start."
+
+#: organizer.rsregexinvalidfmt
+msgid "规则 %d 的正则无效：%s（%s）"
+msgstr "Rule %d: invalid regex %s (%s)"
+
+#: organizer.rsnotetargetexists
+msgid "目标已存在，跳过"
+msgstr "Target exists; skipped"
+
+#: organizer.rsnotedirconflict
+msgid "目标存在同名目录，无法处理"
+msgstr "A folder with the same name exists at target; cannot process"
+
+#: organizer.rsnoteoverwrite
+msgid "将覆盖目标同名文件"
+msgstr "Will overwrite the existing target file"
+
+#: organizer.rsnoterenamed
+msgid "重名 → 已改名"
+msgstr "Name conflict → renamed"
+
+#: organizer.rslogdelemptyfmt
+msgid "删除空目录: %s"
+msgstr "Deleted empty folder: %s"
+
+#: organizer.rserrdirconflict
+msgid "目标存在同名目录，拒绝处理"
+msgstr "A folder with the same name exists at target; refusing to process"
+
+#: organizer.rserrmovefailed
+msgid "移动失败：无法删除源文件（已回滚）"
+msgstr "Move failed: could not delete source file (rolled back)"
+
+#: organizer.rslogfailfmt
+msgid "失败: %s → %s"
+msgstr "Failed: %s → %s"
+
+#: organizer.rserrundocopydel
+msgid "无法删除复制产生的文件"
+msgstr "Cannot delete the file created by the copy"
+
+#: organizer.rserrundotargetdel
+msgid "无法删除目标文件"
+msgstr "Cannot delete the target file"
+
+#: organizer.rslogundofailfmt
+msgid "撤销失败: %s → %s"
+msgstr "Undo failed: %s → %s"
+
+#: organizer.rslogdelemptyundofmt
+msgid "删除空目录（撤销）: %s"
+msgstr "Deleted empty folder (undo): %s"
+
+#: tformmain.caption
+msgid "OctopusArchive 文件整理工具"
+msgstr "OctopusArchive File Organizer"
+
+#: tformmain.pnltop.pnlrow1.lblsrc.caption
+msgid "源目录"
+msgstr "Source folder"
+
+#: tformmain.pnltop.pnlrow1.btnbrowse.caption
+msgid "浏览…"
+msgstr "Browse…"
+
+#: tformmain.pnltop.pnlrow2.lblout.caption
+msgid "输出目录"
+msgstr "Output folder"
+
+#: tformmain.pnltop.pnlrow2.edtout.texthint
+msgid "留空 = 与源目录相同"
+msgstr "Empty = same as source folder"
+
+#: tformmain.pnltop.pnlrow3.lblmode.caption
+msgid "模式"
+msgstr "Mode"
+
+#: tformmain.pnltop.pnlrow3.lblconflict.caption
+msgid "重名冲突"
+msgstr "Name conflict"
+
+#: tformmain.pnltop.pnlrow3.chkrecursive.caption
+msgid "含子目录"
+msgstr "Include subfolders"
+
+#: tformmain.pnltop.pnlrow3.chkhidden.caption
+msgid "含隐藏/系统文件"
+msgstr "Include hidden/system files"
+
+#: tformmain.pnlstatus.lblstatus.caption
+msgid "就绪"
+msgstr "Ready"
+
+#: tformmain.pnlbottom.pnlactions.btnpreview.caption
+msgid "预览"
+msgstr "Preview"
+
+#: tformmain.pnlbottom.pnlactions.btnexecute.caption
+msgid "执行"
+msgstr "Execute"
+
+#: tformmain.pnlbottom.pnlactions.btnundo.caption
+msgid "撤销本次"
+msgstr "Undo last"
+
+#: tformmain.pnlbottom.pnlactions.btncancelrun.caption
+msgid "取消"
+msgstr "Cancel"
+
+#: tformmain.pcmain.tsformat.pnlfmttools.btnmapadd.caption
+msgid "添加一行"
+msgstr "Add row"
+
+#: tformmain.pcmain.tsformat.pnlfmttools.btnmapdel.caption
+msgid "删除所选行"
+msgstr "Delete selected row"
+
+#: tformmain.pcmain.tsformat.lblformathelp.caption
+msgid "说明：扩展名统一转小写做目录名（.JPG 和 .jpg 同组），分组目录建在输出目录下；无扩展名文件进 _noext 目录；未列出的扩展名自动按自身扩展名建目录，映射表只负责合并与改名。"
+msgstr "Note: extensions are lowercased as folder names (.JPG and .jpg are grouped together); grouping folders are created under the output folder; files without an extension go into _noext; unlisted extensions get their own folder — the mapping only merges and renames."
+
+#: tformmain.pcmain.tsflatten.lblflattenhelp.caption
+msgid "说明：把源目录（含子目录）中的文件移动/复制到输出目录顶层；输出目录默认为源目录（此时顶层已有文件保持不动）；重名冲突按顶部设置处理；重复执行是安全的（已到位的文件自动跳过）。"
+msgstr "Note: files in the source folder (including subfolders) are moved/copied to the top level of the output folder; the output folder defaults to the source folder (existing top-level files stay untouched); name conflicts follow the settings at the top; running repeatedly is safe (files already in place are skipped)."
+
+#: tformmain.pcmain.tsflatten.chkdelempty.caption
+msgid "执行（移动）后删除已清空的子目录"
+msgstr "Delete emptied subfolders after executing (move)"
+
+#: tformmain.pcmain.tsregex.pnlregtools.btnruleup.caption
+msgid "上移"
+msgstr "Move up"
+
+#: tformmain.pcmain.tsregex.pnlregtools.btnruledown.caption
+msgid "下移"
+msgstr "Move down"
+
+#: tformmain.pcmain.tsregex.pnlregopts.chkfullname.caption
+msgid "匹配完整文件名（含扩展名）"
+msgstr "Match full file name (with extension)"
+
+#: tformmain.pcmain.tsregex.pnlregopts.chkignorecase.caption
+msgid "忽略大小写"
+msgstr "Ignore case"
+
+#: tformmain.pcmain.tsregex.lblregexhelp.caption
+msgid "说明：规则按列表顺序匹配，第一个命中的规则生效；未匹配的文件保持不动；目标目录名相对输出目录（可含子路径），留空 = 移到输出目录顶层。类 PCRE 语法。"
+msgstr "Note: rules are matched in list order and the first match wins; unmatched files stay where they are; the target folder is relative to the output folder (may contain subpaths); empty = move to the output root. PCRE-like syntax."
+

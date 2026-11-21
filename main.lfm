@@ -109,16 +109,19 @@ object FormMain: TFormMain
       TabOrder = 2
       object lblMode: TLabel
         Left = 0
-        Height = 18
-        Top = 7
+        Height = 32
+        Top = 0
         Width = 32
+        Align = alLeft
         Caption = '模式'
+        Layout = tlCenter
       end
       object cmbMode: TComboBox
-        Left = 44
+        Left = 32
         Height = 26
         Top = 3
         Width = 92
+        Align = alLeft
         ItemHeight = 18
         Style = csDropDownList
         TabOrder = 0
@@ -128,17 +131,22 @@ object FormMain: TFormMain
         )
       end
       object lblConflict: TLabel
-        Left = 156
-        Height = 18
-        Top = 7
+        Left = 124
+        Height = 32
+        Top = 0
         Width = 64
+        Align = alLeft
+        BorderSpacing.Left = 16
         Caption = '重名冲突'
+        Layout = tlCenter
       end
       object cmbConflict: TComboBox
-        Left = 232
+        Left = 188
         Height = 26
         Top = 3
-        Width = 130
+        Width = 150
+        Align = alLeft
+        BorderSpacing.Left = 8
         ItemHeight = 18
         Style = csDropDownList
         TabOrder = 1
@@ -149,20 +157,24 @@ object FormMain: TFormMain
         )
       end
       object chkRecursive: TCheckBox
-        Left = 382
+        Left = 338
         Height = 22
         Top = 5
-        Width = 92
+        Width = 140
+        Align = alLeft
+        BorderSpacing.Left = 16
         Caption = '含子目录'
         Checked = True
         State = cbChecked
         TabOrder = 2
       end
       object chkHidden: TCheckBox
-        Left = 486
+        Left = 478
         Height = 22
         Top = 5
-        Width = 150
+        Width = 190
+        Align = alLeft
+        BorderSpacing.Left = 16
         Caption = '含隐藏/系统文件'
         TabOrder = 3
       end
@@ -196,6 +208,33 @@ object FormMain: TFormMain
       AutoSize = False
       Caption = '就绪'
       Layout = tlCenter
+    end
+    object lblLang: TLabel
+      Left = 826
+      Height = 30
+      Top = 0
+      Width = 84
+      Align = alRight
+      BorderSpacing.Left = 6
+      Caption = '语言/Language'
+      Layout = tlCenter
+    end
+    object cmbLang: TComboBox
+      Left = 916
+      Height = 26
+      Top = 2
+      Width = 96
+      Align = alRight
+      BorderSpacing.Right = 8
+      ItemHeight = 18
+      OnChange = cmbLangChange
+      Style = csDropDownList
+      TabOrder = 2
+      Items.Strings = (
+        '跟随系统'
+        '中文'
+        'English'
+      )
     end
   end
   object pnlBottom: TPanel
@@ -304,30 +343,31 @@ object FormMain: TFormMain
       ClientHeight = 400
       object pnlFmtTools: TPanel
         Left = 0
-        Height = 34
-        Top = 0
+        Height = 44
+        Top = 4
         Width = 996
         Align = alTop
         BevelOuter = bvNone
+        BorderSpacing.Top = 4
         TabOrder = 0
         object btnMapAdd: TButton
-          Left = 0
+          Left = 6
           Height = 32
-          Top = 1
+          Top = 6
           Width = 88
           Align = alLeft
-          BorderSpacing.Around = 1
+          BorderSpacing.Around = 6
           Caption = '添加一行'
           OnClick = btnMapAddClick
           TabOrder = 0
         end
         object btnMapDel: TButton
-          Left = 90
+          Left = 100
           Height = 32
-          Top = 1
-          Width = 92
+          Top = 6
+          Width = 136
           Align = alLeft
-          BorderSpacing.Around = 1
+          BorderSpacing.Around = 6
           Caption = '删除所选行'
           OnClick = btnMapDelClick
           TabOrder = 1
@@ -368,12 +408,13 @@ object FormMain: TFormMain
       object lblFlattenHelp: TLabel
         Left = 0
         Height = 56
-        Top = 0
+        Top = 4
         Width = 996
         Align = alTop
         AutoSize = False
         BorderSpacing.Left = 8
         BorderSpacing.Right = 8
+        BorderSpacing.Top = 4
         BorderSpacing.Bottom = 4
         Caption = '说明：把源目录（含子目录）中的文件移动/复制到输出目录顶层；输出目录默认为源目录（此时顶层已有文件保持不动）；重名冲突按顶部设置处理；重复执行是安全的（已到位的文件自动跳过）。'
         WordWrap = True
@@ -394,52 +435,53 @@ object FormMain: TFormMain
       ClientHeight = 400
       object pnlRegTools: TPanel
         Left = 0
-        Height = 34
-        Top = 0
+        Height = 44
+        Top = 4
         Width = 996
         Align = alTop
         BevelOuter = bvNone
+        BorderSpacing.Top = 4
         TabOrder = 0
         object btnRuleAdd: TButton
-          Left = 0
+          Left = 6
           Height = 32
-          Top = 1
+          Top = 6
           Width = 88
           Align = alLeft
-          BorderSpacing.Around = 1
+          BorderSpacing.Around = 6
           Caption = '添加一行'
           OnClick = btnRuleAddClick
           TabOrder = 0
         end
         object btnRuleDel: TButton
-          Left = 90
+          Left = 100
           Height = 32
-          Top = 1
-          Width = 92
+          Top = 6
+          Width = 136
           Align = alLeft
-          BorderSpacing.Around = 1
+          BorderSpacing.Around = 6
           Caption = '删除所选行'
           OnClick = btnRuleDelClick
           TabOrder = 1
         end
         object btnRuleUp: TButton
-          Left = 184
+          Left = 248
           Height = 32
-          Top = 1
-          Width = 64
+          Top = 6
+          Width = 76
           Align = alLeft
-          BorderSpacing.Around = 1
+          BorderSpacing.Around = 6
           Caption = '上移'
           OnClick = btnRuleUpClick
           TabOrder = 2
         end
         object btnRuleDown: TButton
-          Left = 250
+          Left = 336
           Height = 32
-          Top = 1
-          Width = 64
+          Top = 6
+          Width = 76
           Align = alLeft
-          BorderSpacing.Around = 1
+          BorderSpacing.Around = 6
           Caption = '下移'
           OnClick = btnRuleDownClick
           TabOrder = 3
