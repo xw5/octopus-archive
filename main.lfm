@@ -1,0 +1,512 @@
+object FormMain: TFormMain
+  Left = 240
+  Height = 760
+  Top = 120
+  Width = 1000
+  Caption = 'OctopusArchive 文件整理工具'
+  Constraints.MinHeight = 600
+  Constraints.MinWidth = 880
+  OnCloseQuery = FormCloseQuery
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnShow = FormShow
+  Position = poScreenCenter
+  PixelsPerInch = 96
+  object pnlTop: TPanel
+    Left = 0
+    Height = 118
+    Top = 0
+    Width = 1000
+    Align = alTop
+    BevelOuter = bvNone
+    BorderWidth = 6
+    TabOrder = 0
+    object pnlRow1: TPanel
+      Left = 6
+      Height = 34
+      Top = 6
+      Width = 988
+      Align = alTop
+      BevelOuter = bvNone
+      BorderSpacing.Bottom = 4
+      TabOrder = 0
+      object lblSrc: TLabel
+        Left = 0
+        Height = 34
+        Top = 0
+        Width = 78
+        Align = alLeft
+        Caption = '源目录'
+        Layout = tlCenter
+      end
+      object btnBrowse: TButton
+        Left = 904
+        Height = 34
+        Top = 0
+        Width = 76
+        Align = alRight
+        BorderSpacing.Left = 8
+        Caption = '浏览…'
+        OnClick = btnBrowseClick
+        TabOrder = 0
+      end
+      object edtSrc: TEdit
+        Left = 78
+        Height = 34
+        Top = 0
+        Width = 826
+        Align = alClient
+        TabOrder = 1
+      end
+    end
+    object pnlRow2: TPanel
+      Left = 6
+      Height = 34
+      Top = 44
+      Width = 988
+      Align = alTop
+      BevelOuter = bvNone
+      BorderSpacing.Bottom = 4
+      TabOrder = 1
+      object lblOut: TLabel
+        Left = 0
+        Height = 34
+        Top = 0
+        Width = 78
+        Align = alLeft
+        Caption = '输出目录'
+        Layout = tlCenter
+      end
+      object btnOutBrowse: TButton
+        Left = 904
+        Height = 34
+        Top = 0
+        Width = 76
+        Align = alRight
+        BorderSpacing.Left = 8
+        Caption = '浏览…'
+        OnClick = btnOutBrowseClick
+        TabOrder = 0
+      end
+      object edtOut: TEdit
+        Left = 78
+        Height = 34
+        Top = 0
+        Width = 826
+        Align = alClient
+        TabOrder = 1
+        TextHint = '留空 = 与源目录相同'
+      end
+    end
+    object pnlRow3: TPanel
+      Left = 6
+      Height = 32
+      Top = 82
+      Width = 988
+      Align = alTop
+      BevelOuter = bvNone
+      BorderSpacing.Bottom = 4
+      TabOrder = 2
+      object lblMode: TLabel
+        Left = 0
+        Height = 18
+        Top = 7
+        Width = 32
+        Caption = '模式'
+      end
+      object cmbMode: TComboBox
+        Left = 44
+        Height = 26
+        Top = 3
+        Width = 92
+        ItemHeight = 18
+        Style = csDropDownList
+        TabOrder = 0
+        Items.Strings = (
+          '移动'
+          '复制'
+        )
+      end
+      object lblConflict: TLabel
+        Left = 156
+        Height = 18
+        Top = 7
+        Width = 64
+        Caption = '重名冲突'
+      end
+      object cmbConflict: TComboBox
+        Left = 232
+        Height = 26
+        Top = 3
+        Width = 130
+        ItemHeight = 18
+        Style = csDropDownList
+        TabOrder = 1
+        Items.Strings = (
+          '重命名加序号'
+          '跳过'
+          '覆盖'
+        )
+      end
+      object chkRecursive: TCheckBox
+        Left = 382
+        Height = 22
+        Top = 5
+        Width = 92
+        Caption = '含子目录'
+        Checked = True
+        State = cbChecked
+        TabOrder = 2
+      end
+      object chkHidden: TCheckBox
+        Left = 486
+        Height = 22
+        Top = 5
+        Width = 150
+        Caption = '含隐藏/系统文件'
+        TabOrder = 3
+      end
+    end
+  end
+  object pnlStatus: TPanel
+    Left = 0
+    Height = 30
+    Top = 730
+    Width = 1000
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 1
+    object pbProgress: TProgressBar
+      Left = 0
+      Height = 26
+      Top = 2
+      Width = 240
+      Align = alLeft
+      BorderSpacing.Around = 2
+      Max = 100
+      Smooth = True
+      TabOrder = 0
+    end
+    object lblStatus: TLabel
+      Left = 244
+      Height = 30
+      Top = 0
+      Width = 756
+      Align = alClient
+      AutoSize = False
+      Caption = '就绪'
+      Layout = tlCenter
+    end
+  end
+  object pnlBottom: TPanel
+    Left = 0
+    Height = 300
+    Top = 430
+    Width = 1000
+    Align = alBottom
+    BevelOuter = bvNone
+    TabOrder = 2
+    object pnlActions: TPanel
+      Left = 0
+      Height = 38
+      Top = 0
+      Width = 1000
+      Align = alTop
+      BevelOuter = bvNone
+      TabOrder = 0
+      object btnPreview: TButton
+        Left = 0
+        Height = 34
+        Top = 2
+        Width = 96
+        Align = alLeft
+        BorderSpacing.Top = 2
+        BorderSpacing.Right = 8
+        Caption = '预览'
+        OnClick = btnPreviewClick
+        TabOrder = 0
+      end
+      object btnExecute: TButton
+        Left = 104
+        Height = 34
+        Top = 2
+        Width = 96
+        Align = alLeft
+        BorderSpacing.Top = 2
+        BorderSpacing.Right = 8
+        Caption = '执行'
+        OnClick = btnExecuteClick
+        TabOrder = 1
+      end
+      object btnUndo: TButton
+        Left = 208
+        Height = 34
+        Top = 2
+        Width = 110
+        Align = alLeft
+        BorderSpacing.Top = 2
+        BorderSpacing.Right = 8
+        Caption = '撤销本次'
+        OnClick = btnUndoClick
+        TabOrder = 2
+      end
+      object btnCancelRun: TButton
+        Left = 326
+        Height = 34
+        Top = 2
+        Width = 80
+        Align = alLeft
+        BorderSpacing.Top = 2
+        Caption = '取消'
+        Enabled = False
+        OnClick = btnCancelRunClick
+        TabOrder = 3
+      end
+    end
+    object memoLog: TMemo
+      Left = 0
+      Height = 90
+      Top = 210
+      Width = 1000
+      Align = alBottom
+      ReadOnly = True
+      ScrollBars = ssVertical
+      TabOrder = 1
+      WordWrap = False
+    end
+    object gridPreview: TStringGrid
+      Left = 0
+      Height = 210
+      Top = 0
+      Width = 1000
+      Align = alClient
+      ColCount = 4
+      FixedCols = 0
+      FixedRows = 1
+      OnResize = GridResize
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRowSelect, goColSizing, goThumbTracking]
+      RowCount = 1
+      TabOrder = 2
+      OnPrepareCanvas = gridPreviewPrepareCanvas
+    end
+  end
+  object pcMain: TPageControl
+    Left = 0
+    Height = 430
+    Top = 82
+    Width = 1000
+    ActivePage = tsFormat
+    Align = alClient
+    TabOrder = 3
+    object tsFormat: TTabSheet
+      Caption = '按格式分组'
+      ClientWidth = 996
+      ClientHeight = 400
+      object pnlFmtTools: TPanel
+        Left = 0
+        Height = 34
+        Top = 0
+        Width = 996
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 0
+        object btnMapAdd: TButton
+          Left = 0
+          Height = 32
+          Top = 1
+          Width = 88
+          Align = alLeft
+          BorderSpacing.Around = 1
+          Caption = '添加一行'
+          OnClick = btnMapAddClick
+          TabOrder = 0
+        end
+        object btnMapDel: TButton
+          Left = 90
+          Height = 32
+          Top = 1
+          Width = 92
+          Align = alLeft
+          BorderSpacing.Around = 1
+          Caption = '删除所选行'
+          OnClick = btnMapDelClick
+          TabOrder = 1
+        end
+      end
+      object lblFormatHelp: TLabel
+        Left = 0
+        Height = 46
+        Top = 354
+        Width = 996
+        Align = alBottom
+        AutoSize = False
+        BorderSpacing.Left = 8
+        BorderSpacing.Right = 8
+        BorderSpacing.Bottom = 2
+        Caption = '说明：扩展名统一转小写做目录名（.JPG 和 .jpg 同组），分组目录建在输出目录下；无扩展名文件进 _noext 目录；未列出的扩展名自动按自身扩展名建目录，映射表只负责合并与改名。'
+        WordWrap = True
+      end
+      object gridMap: TStringGrid
+        Left = 0
+        Height = 356
+        Top = 0
+        Width = 996
+        Align = alClient
+        ColCount = 2
+        FixedCols = 0
+        FixedRows = 1
+        OnResize = GridResize
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goTabs]
+        RowCount = 1
+        TabOrder = 1
+      end
+    end
+    object tsFlatten: TTabSheet
+      Caption = '打平目录'
+      ClientWidth = 996
+      ClientHeight = 400
+      object lblFlattenHelp: TLabel
+        Left = 0
+        Height = 56
+        Top = 0
+        Width = 996
+        Align = alTop
+        AutoSize = False
+        BorderSpacing.Left = 8
+        BorderSpacing.Right = 8
+        BorderSpacing.Bottom = 4
+        Caption = '说明：把源目录（含子目录）中的文件移动/复制到输出目录顶层；输出目录默认为源目录（此时顶层已有文件保持不动）；重名冲突按顶部设置处理；重复执行是安全的（已到位的文件自动跳过）。'
+        WordWrap = True
+      end
+      object chkDelEmpty: TCheckBox
+        Left = 0
+        Height = 24
+        Top = 60
+        Width = 996
+        Align = alTop
+        Caption = '执行（移动）后删除已清空的子目录'
+        TabOrder = 0
+      end
+    end
+    object tsRegex: TTabSheet
+      Caption = '按正则分类'
+      ClientWidth = 996
+      ClientHeight = 400
+      object pnlRegTools: TPanel
+        Left = 0
+        Height = 34
+        Top = 0
+        Width = 996
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 0
+        object btnRuleAdd: TButton
+          Left = 0
+          Height = 32
+          Top = 1
+          Width = 88
+          Align = alLeft
+          BorderSpacing.Around = 1
+          Caption = '添加一行'
+          OnClick = btnRuleAddClick
+          TabOrder = 0
+        end
+        object btnRuleDel: TButton
+          Left = 90
+          Height = 32
+          Top = 1
+          Width = 92
+          Align = alLeft
+          BorderSpacing.Around = 1
+          Caption = '删除所选行'
+          OnClick = btnRuleDelClick
+          TabOrder = 1
+        end
+        object btnRuleUp: TButton
+          Left = 184
+          Height = 32
+          Top = 1
+          Width = 64
+          Align = alLeft
+          BorderSpacing.Around = 1
+          Caption = '上移'
+          OnClick = btnRuleUpClick
+          TabOrder = 2
+        end
+        object btnRuleDown: TButton
+          Left = 250
+          Height = 32
+          Top = 1
+          Width = 64
+          Align = alLeft
+          BorderSpacing.Around = 1
+          Caption = '下移'
+          OnClick = btnRuleDownClick
+          TabOrder = 3
+        end
+      end
+      object pnlRegOpts: TPanel
+        Left = 0
+        Height = 30
+        Top = 34
+        Width = 996
+        Align = alTop
+        BevelOuter = bvNone
+        TabOrder = 1
+        object chkFullname: TCheckBox
+          Left = 0
+          Height = 30
+          Top = 0
+          Width = 230
+          Align = alLeft
+          Caption = '匹配完整文件名（含扩展名）'
+          Checked = True
+          State = cbChecked
+          TabOrder = 0
+        end
+        object chkIgnoreCase: TCheckBox
+          Left = 230
+          Height = 30
+          Top = 0
+          Width = 120
+          Align = alLeft
+          Caption = '忽略大小写'
+          Checked = True
+          State = cbChecked
+          TabOrder = 1
+        end
+      end
+      object lblRegexHelp: TLabel
+        Left = 0
+        Height = 46
+        Top = 354
+        Width = 996
+        Align = alBottom
+        AutoSize = False
+        BorderSpacing.Left = 8
+        BorderSpacing.Right = 8
+        BorderSpacing.Bottom = 2
+        Caption = '说明：规则按列表顺序匹配，第一个命中的规则生效；未匹配的文件保持不动；目标目录名相对输出目录（可含子路径），留空 = 移到输出目录顶层。类 PCRE 语法。'
+        WordWrap = True
+      end
+      object gridRules: TStringGrid
+        Left = 0
+        Height = 336
+        Top = 64
+        Width = 996
+        Align = alClient
+        ColCount = 2
+        FixedCols = 0
+        FixedRows = 1
+        OnResize = GridResize
+        Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goTabs]
+        RowCount = 1
+        TabOrder = 2
+      end
+    end
+  end
+  object dlgDir: TSelectDirectoryDialog
+    Left = 850
+    Top = 100
+  end
+end

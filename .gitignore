@@ -1,0 +1,19 @@
+bin/
+lib/
+*.lps
+*.bak
+*.o
+*.ppu
+*.or
+*.res
+*.a
+*.compiled
+*.lrj
+*.exe
+*.ini
+backup/
+
+# Test run artifacts
+tests/files/
+tests/target/
+tests/tmp/
